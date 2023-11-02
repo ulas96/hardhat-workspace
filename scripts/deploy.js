@@ -7,13 +7,13 @@
 const hre = require("hardhat");
 
 async function main() {
-
-  const rps = await hre.ethers.deployContract("RPS" );
-
+  const RPS = await hre.ethers.getContractFactory("RPS");
+  const rps = await RPS.deploy(10);
   await rps.waitForDeployment();
 
   console.log(rps.target);
 }
+
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
