@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract RPS {
 
-
+    event GameCreated(address creator, uint amount, uint256 timestamp);
 
     uint256 public amount;
     address public owner;
@@ -14,7 +14,7 @@ contract RPS {
 
     ERC20 excelcium = ERC20(excelciumAddress);
 
-        struct Game {
+    struct Game {
         uint256 id;
         address opponent1;
         uint256 move1;
@@ -43,6 +43,21 @@ contract RPS {
 
     mapping(address => uint256) public claimedRewards;
 
+    function tokenBalance() public view returns(uint256 balance) {
+        balance = excelcium.balanceOf(msg.sender);
+    }
+
+    function transferToContract(uint256 _amount) public returns(bool) {
+        require(_amount <= tokenBalance());
+        excelcium.transfer(address(this), _amount);
+        return true;
+    }
+
+    function transferFromContract(uint256 _amount) private returns(bool) {
+        excelcium.transferFrom(address(this),msg.sender,_amount);
+        return true;
+    }
+
     function getGames() public view returns (Game[] memory _games) {
         _games = games;
     }
@@ -60,17 +75,17 @@ contract RPS {
         address winner,
         uint _timestamp
     ) private {
-    uint id = games.length + 1;
+        uint id = games.length + 1;
         games.push(Game(
-        id,
-        opt1,
-        move1,
-        opt2,
-        move2,
-        _amount,
-        winner,
-        _timestamp
-    ));
+            id,
+            opt1,
+            move1,
+            opt2,
+            move2,
+            _amount,
+            winner,
+            _timestamp
+        ));
 
     }
 
@@ -81,14 +96,14 @@ contract RPS {
         address _gameCreator,
         uint _timestamp
     ) private {
-    uint id = pendingGames.length + 1;
-    pendingGames.push(PendingGame(
-        id,
-        _gameCreator,
-        amount,
-        true,
-        _timestamp
-    ));
+        uint id = pendingGames.length + 1;
+        pendingGames.push(PendingGame(
+            id,
+            _gameCreator,
+            amount,
+            true,
+            _timestamp
+        ));
         firstMoves[id] = _firstMove;
     }
 
@@ -105,7 +120,7 @@ contract RPS {
     view
     returns (uint256 claimedReward)
     {
-    claimedReward = claimedRewards[adr];
+        claimedReward = claimedRewards[adr];
     }
 
 
@@ -142,17 +157,18 @@ contract RPS {
     }
 
     function createGame(uint256 _firstMove) external {
-        bool s = excelcium.transferFrom(msg.sender, address(this), amount);
-        require(s);
+        require(transferToContract(amount), "Token transfer failed");
         require(_firstMove == 0 || _firstMove == 2 || _firstMove == 1);
+
+        emit GameCreated(msg.sender, amount, block.timestamp);
         addPendingGame(_firstMove, msg.sender, block.timestamp);
     }
 
     function joinGame(uint256 id, uint256 _secondMove) external {
-        uint256 arrayPosition = id - 1;
-        bool s = excelcium.transferFrom(msg.sender, address(this), amount);
-        require(s);
+        require(tokenBalance() >= amount);
+        require(transferToContract(amount),  "Token transfer failed");
         require(_secondMove == 0 || _secondMove == 2 || _secondMove == 1);
+        uint256 arrayPosition = id - 1;
         require(pendingGames[arrayPosition].active == true);
         uint256 result = gameResult(
             firstMoves[pendingGames[arrayPosition].id],
@@ -167,8 +183,8 @@ contract RPS {
             winner = address(0);
         } else if (result == 1) {
             claimableRewards[pendingGames[arrayPosition].gameCreator] +=
-            (amount * 19) /
-            10;
+                (amount * 19) /
+                10;
             winner = pendingGames[arrayPosition].gameCreator;
         } else if (result == 2) {
             claimableRewards[msg.sender] += (amount * 19) / 10;
@@ -190,7 +206,7 @@ contract RPS {
         require(_amount <= claimableRewards[msg.sender]);
         claimableRewards[msg.sender] -= _amount;
         claimedRewards[msg.sender] += _amount;
-        excelcium.transferFrom(address(this), msg.sender, _amount);
+        transferFromContract(_amount);
     }
 
     function cancelGame(uint256 id) external {
@@ -204,6 +220,8 @@ contract RPS {
         require(msg.sender == owner);
         payable(msg.sender).transfer(_amount);
     }
+
+    receive() external payable {}
 
     constructor(uint256 _amount) payable {
         amount = _amount;
