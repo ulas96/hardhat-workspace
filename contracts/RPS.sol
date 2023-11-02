@@ -43,8 +43,8 @@ contract RPS {
 
     mapping(address => uint256) public claimedRewards;
 
-    function tokenBalance() public view returns(uint256 balance) {
-        balance = excelcium.balanceOf(msg.sender);
+    function tokenBalance(address adr) public view returns(uint256 balance) {
+        balance = excelcium.balanceOf(adr);
     }
 
     function transferToContract(uint256 _amount) public returns(bool) {
