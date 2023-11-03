@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 async function main() {
     const EXC = await hre.ethers.getContractFactory("Excelcium");
-    const exc = await EXC.deploy(10);
+    const exc = await EXC.deploy();
     await exc.waitForDeployment();
 
     console.log(exc.target);
