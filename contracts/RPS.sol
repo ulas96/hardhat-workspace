@@ -47,16 +47,6 @@ contract RPS {
         balance = excelcium.balanceOf(adr);
     }
 
-    function transferToContract(uint256 _amount) public returns(bool) {
-        require(_amount <= tokenBalance(msg.sender));
-        excelcium.transfer(address(this), _amount);
-        return true;
-    }
-
-    function transferFromContract(uint256 _amount) private returns(bool) {
-        excelcium.transferFrom(address(this),msg.sender,_amount);
-        return true;
-    }
 
     function getGames() public view returns (Game[] memory _games) {
         _games = games;
@@ -151,22 +141,19 @@ contract RPS {
         }
     }
 
-    function approve(address _spender, uint256 _amount) public returns (bool success) {
-        excelcium.approve(_spender, _amount);
-        return true;
-    }
 
-    function createGame(uint256 _firstMove) external {
-        require(transferToContract(amount), "Token transfer failed");
+    function createGame(uint256 _firstMove, uint256 _amount) external {
+        require(_amount >= amount);
+        require(tokenBalance(msg.sender) >=  _amount);
+        require(excelcium.transferFrom(msg.sender, address(this), _amount));
         require(_firstMove == 0 || _firstMove == 2 || _firstMove == 1);
-
-        emit GameCreated(msg.sender, amount, block.timestamp);
         addPendingGame(_firstMove, msg.sender, block.timestamp);
     }
 
-    function joinGame(uint256 id, uint256 _secondMove) external {
-        require(tokenBalance() >= amount);
-        require(transferToContract(amount),  "Token transfer failed");
+    function joinGame(uint256 id, uint256 _secondMove, uint256 _amount) external {
+        require(_amount >= amount);
+        require(tokenBalance(msg.sender) >=  _amount);
+        require(excelcium.transferFrom(msg.sender, address(this), _amount));
         require(_secondMove == 0 || _secondMove == 2 || _secondMove == 1);
         uint256 arrayPosition = id - 1;
         require(pendingGames[arrayPosition].active == true);
@@ -206,7 +193,7 @@ contract RPS {
         require(_amount <= claimableRewards[msg.sender]);
         claimableRewards[msg.sender] -= _amount;
         claimedRewards[msg.sender] += _amount;
-        transferFromContract(_amount);
+        excelcium.transferFrom(address(this), msg.sender, _amount);
     }
 
     function cancelGame(uint256 id) external {
@@ -220,8 +207,6 @@ contract RPS {
         require(msg.sender == owner);
         payable(msg.sender).transfer(_amount);
     }
-
-    receive() external payable {}
 
     constructor(uint256 _amount) payable {
         amount = _amount;
