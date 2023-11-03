@@ -4,7 +4,7 @@
 
 const hre = require("hardhat");
 
-const gameAddr = "0xEe4240abA3C984203b9138888cFF7aAcfD5145aA" // previous: "0x1Ecd83cF22B941267a4b18C50B2371998a7f4Ebd"
+const gameAddr = "0x35e199C2a34701DdFFb0003E2f38eAbdA540AbdF" // previous: "0x1Ecd83cF22B941267a4b18C50B2371998a7f4Ebd"
 const contractName = "RPS";
 
 const tokenAddr = "0x696653050c71C252254696D154E0318D06376AB3"
