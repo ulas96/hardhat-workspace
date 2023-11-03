@@ -48,7 +48,7 @@ contract RPS {
     }
 
     function transferToContract(uint256 _amount) public returns(bool) {
-        require(_amount <= tokenBalance());
+        require(_amount <= tokenBalance(msg.sender));
         excelcium.transfer(address(this), _amount);
         return true;
     }
