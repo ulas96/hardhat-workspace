@@ -1,7 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+interface IERC20 {
+    function totalSupply() external view returns (uint);
+
+    function balanceOf(address account) external view returns (uint);
+
+    function transfer(address recipient, uint amount) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint amount) external returns (bool);
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
+}
 
 contract RPS {
 
@@ -10,9 +29,9 @@ contract RPS {
     uint256 public amount;
     address public owner;
 
-    address private excelciumAddress = 0x696653050c71C252254696D154E0318D06376AB3;
+    address internal excelciumAddress = 0x9e6969254D73Eda498375B079D8bE540FB42fea7;
 
-    ERC20 private excelcium;
+    IERC20 internal excelcium = IERC20(excelciumAddress);
 
     struct Game {
         uint256 id;
@@ -50,7 +69,6 @@ contract RPS {
     constructor(uint256 _amount) payable {
         amount = _amount;
         owner = msg.sender;
-        excelcium = ERC20(excelciumAddress);
     }
 
     function getGames() public view returns (Game[] memory _games) {
@@ -148,11 +166,12 @@ contract RPS {
     }
 
     function claimRewards(uint256 _amount) public {
-        require(claimableRewards[msg.sender] > 0);
-        require(_amount <= claimableRewards[msg.sender]);
+        require(_amount > 0, "Amount is 0");
+        require(claimableRewards[msg.sender] > 0, "No rewards to claim");
+        require(_amount <= claimableRewards[msg.sender], "Amount is greater than claimable rewards");
         claimableRewards[msg.sender] -= _amount;
         claimedRewards[msg.sender] += _amount;
-        require(excelcium.transferFrom(msg.sender, address(this), _amount));
+        require(excelcium.transfer(msg.sender, _amount), "Transfer failed");
     }
 
     function cancelGame(uint256 id) external {
