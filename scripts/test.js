@@ -4,14 +4,12 @@
 
 const hre = require("hardhat");
 
-const gameAddr = "0x35e199C2a34701DdFFb0003E2f38eAbdA540AbdF" // previous: "0x1Ecd83cF22B941267a4b18C50B2371998a7f4Ebd"
+const gameAddr = "0x7F3B51891126fa305154E3E35cD64Ed7fe8B3c1F" // previous: "0x811DAfdc01C05277e70f887Eb499AB2f4Ba9501a"
 const gameName = "RPS";
 
-const tokenAddr = "0x482FB70C0bb85622c1d59e475b9D82721B61BAA7" // previous: "0x696653050c71C252254696D154E0318D06376AB3"
+const tokenAddr = "0x9e6969254D73Eda498375B079D8bE540FB42fea7" // previous: "0x696653050c71C252254696D154E0318D06376AB3"
 const tokenName = "Excelcium";
 
-const contractAddr = "0x873289a1aD6Cf024B927bd13bd183B264d274c68";
-const contractName = "Bucket";
 
 async function main() {
 
@@ -19,21 +17,20 @@ async function main() {
 
     const token = await hre.ethers.getContractAt(tokenName, tokenAddr);
 
-    const bucket = await hre.ethers.getContractAt(contractName, contractAddr);
 
     const startBalance = await token.balanceOf("0x002C65Be429d430DF090f2DC847df3b468676029");
 
     console.log(startBalance);
 
-    const approveTx = await token.approve("0x873289a1aD6Cf024B927bd13bd183B264d274c68", 10);
+    const approveTx = await token.approve(gameAddr, 10);
     await approveTx.wait();
 
     console.log("Approved");
 
-    const transferTx = await bucket.drop(tokenAddr,10);
+    const transferTx = await game.createGame(1, 10);
     await transferTx.wait();
 
-    console.log("Dropped");
+    console.log("Game Created");
 
     const endBalance = await token.balanceOf("0x002C65Be429d430DF090f2DC847df3b468676029");
     console.log(endBalance);
