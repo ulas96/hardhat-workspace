@@ -40,6 +40,7 @@ contract PublicCampaigns {
         Participant[] participants;
         Donation[] donations;
         Vote[] votes;
+        address[] winners;
         uint256 donation;
         uint256 maxReward;
         uint256 remainingReward;
@@ -57,6 +58,7 @@ contract PublicCampaigns {
         newCampaign.votingDeadline = _votingDeadline;
         newCampaign.articleId = _articleId;
         newCampaign.questions = _questions;
+        newCampaign.winners = new address[](0);
         newCampaign.donation = 0;
         newCampaign.maxReward = _maxReward;
         newCampaign.remainingReward = 0;
