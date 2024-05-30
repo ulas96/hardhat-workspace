@@ -16,6 +16,7 @@ contract PublicCampaigns {
     
     struct Participant {
         address participantAddress;
+        uint256 id;
         string[] answers;
         uint256 votes;
         bool isRewarded;
@@ -40,7 +41,6 @@ contract PublicCampaigns {
         Participant[] participants;
         Donation[] donations;
         Vote[] votes;
-        address[] winners;
         uint256 donation;
         uint256 maxReward;
         uint256 remainingReward;
@@ -52,13 +52,15 @@ contract PublicCampaigns {
         require(uruk.isMember(msg.sender));
         require(_donationDeadline > block.timestamp);
         require(_votingDeadline > _donationDeadline);
+        require(_articleId > 0);
+        require(uruk.getArticleCount() >= _articleId);
+        require(_maxReward > 0);
         PublicCampaign storage newCampaign = publicCampaigns.push();
         newCampaign.id = publicCampaigns.length;
         newCampaign.donationDeadline = _donationDeadline;
         newCampaign.votingDeadline = _votingDeadline;
         newCampaign.articleId = _articleId;
         newCampaign.questions = _questions;
-        newCampaign.winners = new address[](0);
         newCampaign.donation = 0;
         newCampaign.maxReward = _maxReward;
         newCampaign.remainingReward = 0;
@@ -79,20 +81,38 @@ contract PublicCampaigns {
         require(publicCampaigns.length >= _campaignId, "Campaign doesn't exist");
         require(_answers.length == publicCampaigns[_campaignId - 1].questions.length);
         PublicCampaign storage currentCampaign = publicCampaigns[_campaignId - 1];
-        Participant memory currentParticipant = Participant(msg.sender, _answers,0 , false);
+        for (uint256 i = 0; i < currentCampaign.participants.length; i++) {
+            require(currentCampaign.participants[i].participantAddress == msg.sender, "You already participated to this campaign.");
+        } 
+        Participant memory currentParticipant = Participant(msg.sender,currentCampaign.participants.length + 1,_answers,0 , false);
         currentCampaign.participants.push(currentParticipant);
     }
 
+
+    function vote(uint256 _campaignId, uint256 _participantId) public {
+        require(uruk.isMember(msg.sender));
+        require(publicCampaigns.length >= _campaignId);
+        PublicCampaign storage currentCampaign = publicCampaigns[_campaignId - 1];
+        require(currentCampaign.participants.length >= _participantId);
+        require(currentCampaign.votingDeadline > block.timestamp);
+        for (uint256 i = 0; i < currentCampaign.votes.length; i++) {
+            require(currentCampaign.votes[i].voterAddress == msg.sender, "You already voted to this campaign.");
+        }
+        Vote memory currentVote = Vote(msg.sender, _participantId);
+        currentCampaign.votes.push(currentVote);
+        currentCampaign.participants[_participantId].votes += 1;
+    }
+
+
+    function decideWinners(uint256 _campaignId) public view {
+        require(uruk.isMember(msg.sender));
+        require(publicCampaigns.length >= _campaignId, "Campaign doesn't exist");
+        PublicCampaign memory currentCampaign = publicCampaigns[_campaignId - 1];
+        require(currentCampaign.votingDeadline < block.timestamp, "Voting deadline not reached");
+        currentCampaign.participants = bubbleSort(currentCampaign.participants);
+    }
     
 
-    function rewardParticipant(uint256 _campaignId, uint256 _participantId) public {
-        require(uruk.isMember(msg.sender));
-        require(publicCampaigns[_campaignId-1].remainingReward > 0);
-        require(publicCampaigns[_campaignId-1].participants.length >= _participantId, "Participant doesn't exist");
-        require(publicCampaigns[_campaignId-1].participants[_participantId-1].isRewarded == false, "Participant already rewarded");
-        publicCampaigns[_campaignId-1].participants[_participantId-1].isRewarded == true;
-        publicCampaigns[_campaignId-1].remainingReward -= publicCampaigns[_campaignId-1].maxReward;
-    }
 
     function claimReward(uint256 _campaignId) public {
         require(uruk.isMember(msg.sender));
@@ -105,8 +125,21 @@ contract PublicCampaigns {
         }
     }
 
-    function getCompaigns() public view returns(PublicCampaign[] memory) {
+    function getPublicCampaigns() public view returns(PublicCampaign[] memory) {
         return publicCampaigns;
+    }
+
+    function bubbleSort(Participant[] memory arr) public pure returns (Participant[] memory) {
+        uint n = arr.length;
+        for (uint i = 0; i < n - 1; i++) {
+            for (uint j = 0; j < n - i - 1; j++) {
+                if (arr[j].votes > arr[j + 1].votes) {
+                    (arr[j], arr[j + 1]) = (arr[j + 1], arr[j]);
+                }
+            }
+        }
+        
+        return arr;
     }
 
 }
