@@ -12,7 +12,7 @@ interface Uruk {
 
 contract PublicCampaigns {
 
-    Uruk uruk = Uruk(0x9C4577b3a6E179CbffDD7C6F08d7c0E4478928d8);
+    Uruk uruk = Uruk(0xd9447c058938D8Fcf917cDBC3544f089D8e12Eb6);
     
     struct Participant {
         address participantAddress;
@@ -50,8 +50,8 @@ contract PublicCampaigns {
 
     function createCampaign(uint256 _donationDeadline, uint256 _votingDeadline, uint256 _articleId, string[] memory _questions, uint256 _maxReward) public  {
         require(uruk.isMember(msg.sender));
-        require(_donationDeadline > block.timestamp);
-        require(_votingDeadline > _donationDeadline);
+        require(_donationDeadline > block.timestamp, "Donation deadline should be in the future");
+        require(_votingDeadline > _donationDeadline, "Voting dealine should be after donation deadline");
         require(_articleId > 0);
         require(uruk.getArticleCount() >= _articleId);
         require(_maxReward > 0);
