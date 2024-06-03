@@ -59,11 +59,9 @@ contract SimpleVoting {
 
     function vote(uint256 _campaignId, uint256 _participantId) public {
         require(publicCampaigns.length >= _campaignId);
+        require(!hasVoted(_campaignId, msg.sender));
         PublicCampaign storage currentCampaign = publicCampaigns[_campaignId - 1];
         require(currentCampaign.participants.length >= _participantId);
-        for (uint256 i = 0; i < currentCampaign.votes.length; i++) {
-            require(currentCampaign.votes[i].voterAddress == msg.sender, "You already voted to this campaign.");
-        }
         Vote memory currentVote = Vote(msg.sender, _participantId);
         currentCampaign.votes.push(currentVote);
         currentCampaign.participants[_participantId].votes += 1;
@@ -91,11 +89,15 @@ contract SimpleVoting {
         return publicCampaigns;
     }
 
+    function hasVoted(uint256 _campaignId, address _voterAddress) public view returns(bool _hasVoted){ 
+        for(uint i =0 ; i < publicCampaigns[_campaignId-1].votes.length ; i++) {
+            if(publicCampaigns[_campaignId-1].votes[i].voterAddress == _voterAddress) _hasVoted = true;
+        }
+    }
+
     function hasParticipated(uint256 _campaignId, address _participantAddress) public view returns(bool _hasParticipated){
         for(uint256 i = 0; i < publicCampaigns[_campaignId-1].participants.length; i++) {
-            if(publicCampaigns[_campaignId - 1].participants[i].participantAddress == _participantAddress) {
-                _hasParticipated = true;
-            }
+            if(publicCampaigns[_campaignId - 1].participants[i].participantAddress == _participantAddress) _hasParticipated = true;
         }
     }
 
