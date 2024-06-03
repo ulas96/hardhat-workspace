@@ -4,7 +4,6 @@
 pragma solidity ^0.8.9;
 
 contract SimpleVoting {
-
     
     struct Participant {
         address participantAddress;
@@ -27,46 +26,41 @@ contract SimpleVoting {
         uint256 id;
         uint256 donation;
         uint256 remainingReward;
+        uint256 maxReward;
         Participant[] participants;
-        Votes[] votes;
+        Vote[] votes;
     }
 
     PublicCampaign[] public publicCampaigns;
 
-    function createCampaign(uint256 _donationDeadline, uint256 _votingDeadline, uint256 _articleId, string[] memory _questions, uint256 _maxReward) public  {
+    function createCampaign(uint256 _maxReward) public  {
         PublicCampaign storage newCampaign = publicCampaigns.push();
         newCampaign.id = publicCampaigns.length;
         newCampaign.donation = 0;
         newCampaign.remainingReward = 0;
+        newCampaign.maxReward = _maxReward;
     }
 
     function donateCampaign(uint256 _donationAmount, uint256 _campaignId) external payable {
         require(_donationAmount >= msg.value);
         require(publicCampaigns.length >= _campaignId);
-
         publicCampaigns[_campaignId].donation += _donationAmount;
         publicCampaigns[_campaignId].remainingReward += _donationAmount;
     }
     
-    function participateCampaign(uint256 _campaignId, string[] memory _answers) public {
-        require(uruk.isMember(msg.sender));
+    function participateCampaign(uint256 _campaignId) public {
         require(publicCampaigns.length >= _campaignId, "Campaign doesn't exist");
-        require(_answers.length == publicCampaigns[_campaignId - 1].questions.length);
+        require(!hasParticipated(_campaignId, msg.sender), "Participation has already been made");
         PublicCampaign storage currentCampaign = publicCampaigns[_campaignId - 1];
-        for (uint256 i = 0; i < currentCampaign.participants.length; i++) {
-            require(currentCampaign.participants[i].participantAddress == msg.sender, "You already participated to this campaign.");
-        } 
-        Participant memory currentParticipant = Participant(msg.sender,currentCampaign.participants.length + 1,_answers,0 , false);
+        Participant memory currentParticipant = Participant(msg.sender,currentCampaign.participants.length + 1,0 , false);
         currentCampaign.participants.push(currentParticipant);
     }
 
 
     function vote(uint256 _campaignId, uint256 _participantId) public {
-        require(uruk.isMember(msg.sender));
         require(publicCampaigns.length >= _campaignId);
         PublicCampaign storage currentCampaign = publicCampaigns[_campaignId - 1];
         require(currentCampaign.participants.length >= _participantId);
-        require(currentCampaign.votingDeadline > block.timestamp);
         for (uint256 i = 0; i < currentCampaign.votes.length; i++) {
             require(currentCampaign.votes[i].voterAddress == msg.sender, "You already voted to this campaign.");
         }
@@ -76,18 +70,7 @@ contract SimpleVoting {
     }
 
 
-    function decideWinners(uint256 _campaignId) public view {
-        require(uruk.isMember(msg.sender));
-        require(publicCampaigns.length >= _campaignId, "Campaign doesn't exist");
-        PublicCampaign memory currentCampaign = publicCampaigns[_campaignId - 1];
-        require(currentCampaign.votingDeadline < block.timestamp, "Voting deadline not reached");
-        currentCampaign.participants = bubbleSort(currentCampaign.participants);
-    }
-    
-
-
     function claimReward(uint256 _campaignId) public {
-        require(uruk.isMember(msg.sender));
         require(publicCampaigns[_campaignId-1].participants.length > 0, "No participants");
         for(uint i = 0; i < publicCampaigns[_campaignId-1].participants.length; i++) {
             if(publicCampaigns[_campaignId-1].participants[i].participantAddress == msg.sender) {
@@ -97,8 +80,23 @@ contract SimpleVoting {
         }
     }
 
+
+    function decideWinners(uint256 _campaignId) public view {
+        require(publicCampaigns.length >= _campaignId, "Campaign doesn't exist");
+        PublicCampaign memory currentCampaign = publicCampaigns[_campaignId - 1];
+        currentCampaign.participants = bubbleSort(currentCampaign.participants);
+    }
+
     function getPublicCampaigns() public view returns(PublicCampaign[] memory) {
         return publicCampaigns;
+    }
+
+    function hasParticipated(uint256 _campaignId, address _participantAddress) public view returns(bool _hasParticipated){
+        for(uint256 i = 0; i < publicCampaigns[_campaignId-1].participants.length; i++) {
+            if(publicCampaigns[_campaignId - 1].participants[i].participantAddress == _participantAddress) {
+                _hasParticipated = true;
+            }
+        }
     }
 
     function bubbleSort(Participant[] memory arr) public pure returns (Participant[] memory) {
